@@ -69,11 +69,8 @@ class GeneratePDF:
                     margin: 0;
                     padding: 0;
                 }}
-                h1 {{
-                    color: blue;
-                    text-decoration: underline;
-                }}
                 table {{
+                    margin : 2px;
                     border-collapse: collapse;
                     width: 100%;
                 }}
@@ -111,6 +108,6 @@ class GeneratePDF:
     
     def generate_and_save_pdf(self) -> bytes:
         html_content = self.generate_html()
-        #HTML(string=html_content).write_pdf(self.pdf_name)
+        HTML(string=html_content).write_pdf(self.pdf_name)
         pdf_data = HTML(string=html_content).write_pdf()
         return pdf_data
