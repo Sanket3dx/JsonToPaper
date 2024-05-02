@@ -6,11 +6,13 @@ from redis_op import RedisOperations
 from typing import List, Optional
 from pydantic import BaseModel, HttpUrl
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 import base64
 
 
 class PDFRequest(BaseModel):
     theme: str
+    response_type: str
     pdf_type: str
     header: List[dict]
     body: List[dict]
@@ -23,18 +25,25 @@ app = FastAPI()
 async def generate_pdf(request_data: PDFRequest):
     request_dict = request_data.dict()
     file_path = "output.pdf"
-    PDF = GeneratePDF(request_dict,NAME=file_path)
+    PDF = GeneratePDF(request_dict, NAME=file_path)
     pdf_data = PDF.generate_and_save_pdf()
-    pdf_data_base64 = base64.b64encode(pdf_data).decode('utf-8')
-    base_url = "http://localhost:8080"
-    file_handler = FileHandler(base_url)
-    upload_response = file_handler.upload_file(pdf_data, f"/pdf/client/{file_path}")
-    print("Upload status:", upload_response.status_code)
-    print(f"/pdf/client/{file_path}")
-    return {
-        "pdf_path" : f"/pdf/client/{file_path}",
-        "pdf_base64" : pdf_data_base64
-        }
+    
+    response_type = request_dict.get('response_type', 'path')
+
+    if response_type == 'base64':
+        pdf_data_base64 = base64.b64encode(pdf_data).decode('utf-8')
+        return {"pdf_base64": pdf_data_base64}
+    elif response_type == 'path':
+        base_url = "http://localhost:8080"
+        file_handler = FileHandler(base_url)
+        upload_response = file_handler.upload_file(pdf_data, f"/pdf/client/{file_path}")
+        print("Upload status:", upload_response.status_code)
+        print(f"/pdf/client/{file_path}")
+        return {"pdf_path": f"/pdf/client/{file_path}"}
+    elif response_type == 'pdf':
+        return FileResponse(path=file_path, filename=file_path, media_type='application/pdf')
+    else:
+        return {"error": "Invalid response_type"}
 
 
 
